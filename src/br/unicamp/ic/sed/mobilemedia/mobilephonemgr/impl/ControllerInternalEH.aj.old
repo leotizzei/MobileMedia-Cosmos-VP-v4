@@ -1,0 +1,138 @@
+package br.unicamp.ic.sed.mobilemedia.mobilephonemgr.impl;
+/*
+import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Alert;
+import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Command;
+import br.unicamp.ic.sed.mobilemedia.mobilephonemgr.spec.excep.*;
+import br.unicamp.ic.sed.mobilemedia.mobilephonemgr.spec.prov.IManager;
+import br.unicamp.ic.sed.mobilemedia.mobilephonemgr.spec.req.IMobileResources;
+
+import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.Display;
+import javax.microedition.midlet.MIDlet;
+*
+*/
+import javax.microedition.lcdui.Alert;
+import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Command;
+import javax.microedition.lcdui.Display;
+import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Image;
+import javax.microedition.midlet.MIDlet;
+
+import br.unicamp.ic.sed.mobilemedia.mobilephonemgr.spec.excep.ImageNotFoundException;
+import br.unicamp.ic.sed.mobilemedia.mobilephonemgr.spec.excep.PersistenceMechanismException;
+import br.unicamp.ic.sed.mobilemedia.mobilephonemgr.spec.excep.UnavailablePhotoAlbumException;
+import br.unicamp.ic.sed.mobilemedia.mobilephonemgr.spec.prov.IManager;
+import br.unicamp.ic.sed.mobilemedia.mobilephonemgr.spec.req.IMobileResources;
+
+aspect ControllerInternalEH {
+
+	/*the same as the original code*/	
+	public pointcut showImageList(String recordName): 
+		 execution(public void br.unicamp.ic.sed.mobilemedia.mobilephonemgr.impl.BaseController.showImageList(String ))
+		 && args( recordName );
+	
+	declare soft: br.unicamp.ic.sed.mobilemedia.filesystemmgr.spec.excep.UnavailablePhotoAlbumException : 
+		execution(public void br.unicamp.ic.sed.mobilemedia.mobilephonemgr.impl.BaseController.showImageList(String));
+	
+		
+	void around(String recordName): showImageList( recordName){
+		try{
+			proceed(recordName);
+		}  catch (UnavailablePhotoAlbumException e) {
+			this.errorMessage( "Error", "The list of photos can not be recovered", null, AlertType.ERROR);
+			return;
+		}
+	}
+	
+	/****************************************************************************************/	
+	//public void  BaseController.showImage() block 1 - Scenario 3
+	public pointcut showImage(BaseController controler): 
+		 execution(public void  BaseController.showImage())&&this(controler);
+	
+	declare soft: PersistenceMechanismException : execution(public void  br.unicamp.ic.sed.mobilemedia.mobilephonemgr.impl.BaseController.showImage());
+	declare soft: ImageNotFoundException : execution(public void  br.unicamp.ic.sed.mobilemedia.mobilephonemgr.impl.BaseController.showImage());
+	
+	void around(BaseController controler): showImage(controler){
+		try{
+			proceed(controler);
+		} catch (ImageNotFoundException e) {
+			this.errorMessage("Error", "The selected photo was not found in the mobile device", null, AlertType.ERROR);
+			return;
+		} catch (PersistenceMechanismException e) {
+			this.errorMessage("Error","The mobile database can open this photo", null, AlertType.ERROR);
+			return;
+		}		
+	}
+	/************************************************************************************/
+	
+	
+	declare soft:PersistenceMechanismException:
+		execution(void br.unicamp.ic.sed.mobilemedia.mobilephonemgr.impl.BaseController.commandAction(Command,Displayable));
+	
+	/*begin debug code*/
+	pointcut commandAction(Command c, Displayable d):
+		execution(public void BaseController.commandAction(Command , Displayable ))
+		&& args(c,d);
+	
+	
+	/*after(Command c, Displayable d)throwing(PersistenceMechanismException e) throws PersistenceMechanismException: 
+		commandAction(c,d){
+		throw new PersistenceMechanismException();
+	}*/
+	
+	
+	
+	void around(Command c,Displayable d) :commandAction(c,d){
+		try{
+			proceed(c,d);
+		}
+		catch(Exception e){
+			System.out.println("Error: commandAction()");
+			e.printStackTrace(); 
+		}
+	}
+	/*end debug code*/
+	/************************************************************************************/
+	private void errorMessage(String title,String msg,Image alertImage,AlertType alertType){
+			
+		IManager mgr = ComponentFactory.createInstance();
+		IMobileResources mobileResources = (IMobileResources) mgr.getRequiredInterface("IMobileResources");
+		Alert alert = new Alert( title, msg, alertImage, alertType);
+		MIDlet midlet = mobileResources.getMainMIDlet();
+		Display.getDisplay( midlet ).setCurrent(alert, Display.getDisplay( midlet ).getCurrent());
+		return ;
+	}
+	
+	/************************************************************************************/
+	
+	declare soft:PersistenceMechanismException:call(public void br.unicamp.ic.sed.mobilemedia.mobilephonemgr.impl.BaseController.postCommand ( Command  ));
+	
+	/***********************************************************************************/
+	
+	/*begin debug code*/
+	/*public pointcut debuggingPostCommand():
+		call(* *.postCommand(Command )) && args(c)		||(call(BaseController.commandAction(Command)));
+	
+	
+	after( )throwing (PersistenceMechanismException e):debuggingPostCommand(){
+		System.out.println("postCommand  excecao "+e.getMessage());
+	}
+	
+	public pointcut debuggingCommandAction():
+		execution(void *.commandAction(Command )) && args(c)		||(call(BaseController.commandAction(Command)));
+	
+	
+	after( ):debuggingCommandAction(){
+		System.out.println("commandAction");
+	}
+	
+	
+	before(Command c):(call(void br.unicamp.ic.sed.mobilemedia.mobilephonemgr.spec.prov.IMobilePhone.postCommand(Command)) && args(c)){
+		System.out.println("postCommand("+c.getLabel()+") while executing "+thisJoinPoint);
+	}*/
+	
+	/*end debug code*/
+}
